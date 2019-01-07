@@ -1,6 +1,6 @@
 import time
 import machine
-from src.connect import WIFI
+from connect import WIFI
 from pms7003 import PMS7003
 from dht import DHT11
 
