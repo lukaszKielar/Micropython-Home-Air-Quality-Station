@@ -1,0 +1,7 @@
+.idea
+.git
+weather_station.py
+webrepl.html
+venv/
+firmware/
+src/config.json
