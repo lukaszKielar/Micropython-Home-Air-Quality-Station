@@ -4,6 +4,6 @@
 #import webrepl
 #webrepl.start()
 import gc
-from connect import WIFI
+from configuration import WIFI
 WIFI().start()
 gc.collect()
