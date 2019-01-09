@@ -2,6 +2,7 @@ import machine
 import ustruct as struct
 
 
+# TODO pass uart or device as an argument and prepare configuration
 class PMS7003:
     PMS_FRAME_LENGTH = 0
     PMS_PM1_0 = 1

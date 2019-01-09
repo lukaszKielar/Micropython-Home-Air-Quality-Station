@@ -1,4 +1,6 @@
 {
+  "device" : ["esp8266", "esp32"] ,
+  "uart" : [0, 2] ,
   "ssid" : "ssid" ,
   "password" : "password",
   "api_key" : "api_key"

@@ -1,14 +1,16 @@
 import time
 import machine
-import readings
+from station import Station
 from configuration import WIFI
 
 wifi = WIFI()
+station = Station()
 
 while True:
     try:
-        temp, hum = readings.readFromDHT()
-        pm_1p0, pm_2p5, pm_10p0 = readings.readFromPMS()
+        temp = station.read_temperature()
+        hum = station.read_humidity()
+        pm_1p0, pm_2p5, pm_10p0 = station.read_pm()
         try:
             wifi.sendToThingspeak(pm_1p0=pm_1p0, pm_2p5=pm_2p5, pm_10p0=pm_10p0, temp=temp, hum=hum)
         except Exception as e:
