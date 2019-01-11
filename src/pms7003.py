@@ -1,9 +1,9 @@
 import machine
 import ustruct as struct
+from configuration import Config
 
 
-# TODO pass uart or device as an argument and prepare configuration
-class PMS7003:
+class PMS7003(Config):
     PMS_FRAME_LENGTH = 0
     PMS_PM1_0 = 1
     PMS_PM2_5 = 2
@@ -22,7 +22,7 @@ class PMS7003:
     PMS_CHECKSUM = 15
 
     def get_uart(self):
-        uart = machine.UART(2, 9600)  # UART 0 for ESP8266
+        uart = machine.UART(self.uart, 9600)
         uart.init(9600, bits=8, parity=None, stop=1, timeout=5000)
         return uart
 
@@ -70,3 +70,9 @@ class PMS7003:
                 'ERROR': data[self.PMS_ERROR],
                 'CHECKSUM': data[self.PMS_CHECKSUM],
             }
+
+    def __repr__(self):
+        return "Device: {}\nUart: {}\nSensor: PMS7003".format(self.device, self.uart)
+
+    def __str__(self):
+        return self.__repr__()

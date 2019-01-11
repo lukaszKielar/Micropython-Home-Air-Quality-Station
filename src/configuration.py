@@ -13,8 +13,13 @@ class Config:
             setattr(self, key, value)
         print("Config file loaded")
 
+    def __repr__(self):
+        return "Device: {}\nUart: {}".format(self.device, self.uart)
 
-# TODO support both esp32 and esp8266
+    def __str__(self):
+        return self.__repr__()
+
+
 class WIFI(Config):
 
     def __init__(self):
