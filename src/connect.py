@@ -10,8 +10,8 @@ class WIFIConfig:
     def __init__(self):
         with open(self.config_path) as f:
             config = ujson.load(f)
-        for key in config:
-            setattr(self, key, config[key])
+        for key, value in config.items():
+            setattr(self, key, value)
 
     def __repr__(self):
         return "SSID: {}".format(self.ssid)
