@@ -8,27 +8,7 @@ wifi = WIFI()
 dht = DHT11(machine.Pin(4))
 pms = PMS7003()
 
-
-def read_temperature():
-    """
-
-    :return:
-    """
-    dht.measure()
-    temp = dht.temperature()
-    print("Temperature: ", temp, "*C")
-    return temp
-
-
-def read_humidity():
-    """
-
-    :return:
-    """
-    dht.measure()
-    hum = dht.humidity()
-    print("Humidity: ", hum, "%")
-    return hum
+reset_value = 0
 
 
 def read_pm():
@@ -47,9 +27,14 @@ def read_pm():
 
 
 while True:
+    if reset_value == 12:
+        machine.reset()
     try:
-        temp = read_temperature()
-        hum = read_humidity()
+        dht.measure()
+        temp = dht.temperature()
+        print("Temperature: ", temp, "*C")
+        hum = dht.humidity()
+        print("Humidity: ", hum, "%")
         pm_1p0, pm_2p5, pm_10p0 = read_pm()
         try:
             wifi.sendToThingspeak(pm_1p0=pm_1p0, pm_2p5=pm_2p5, pm_10p0=pm_10p0, temp=temp, hum=hum)
@@ -59,5 +44,7 @@ while True:
         print("Exiting...")
         break
     except Exception as e:
+        print(e)
         machine.reset()
+    reset_value += 1
     time.sleep(600)
