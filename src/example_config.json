@@ -1,4 +1,6 @@
 {
+  "device" : "esp32" , // esp32 or esp8266
+  "uart" : 2 , // 2 for esp32 and 0 for esp8266
   "ssid" : "ssid" ,
   "password" : "password",
   "api_key" : "api_key"
