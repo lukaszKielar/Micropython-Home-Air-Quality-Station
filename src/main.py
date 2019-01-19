@@ -5,10 +5,14 @@ from pms7003 import PMS7003
 from dht import DHT11
 
 wifi = WIFI()
+pms = PMS7003()
+
+count = 0
 
 while True:
+    if count == 12:
+        machine.reset()
     try:
-        pms = PMS7003()
         data = pms.read()
         pm_1p0 = data["PM1_0"]
         pm_2p5 = data["PM2_5"]
@@ -31,4 +35,5 @@ while True:
         break
     except Exception as e:
         machine.reset()
+    count += 1
     time.sleep(600)
