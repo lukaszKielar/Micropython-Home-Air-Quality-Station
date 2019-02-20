@@ -5,3 +5,5 @@ webrepl.html
 venv/
 firmware/
 src/config.json
+src/openweathermap_api/settings.py
+src/openweathermap_api/data/
