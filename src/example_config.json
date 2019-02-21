@@ -3,6 +3,6 @@
   "uart" : 2 , // 2 for esp32 and 0 for esp8266
   "ssid" : "ssid" ,
   "password" : "password",
-  "owm_api_key" : 'owm_api_key',
-  "thinkspeak_api_key" : 'thinkspeak_api_key'
+  "owm_api_key" : "owm_api_key",
+  "thinkspeak_api_key" : "thinkspeak_api_key"
 }
