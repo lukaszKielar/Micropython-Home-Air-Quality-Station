@@ -9,10 +9,6 @@ from openweathermap_api.settings import OWM_API_KEY, THINGSPEAK_API_KEY
 
 OK_CODE = 200
 
-def to_celsius(f_degrees: float) -> float:
-    c_degrees = (f_degrees - 32) * 5/9
-    return float("{:.2f}".format(c_degrees))
-
 
 class Weather_API:
 
