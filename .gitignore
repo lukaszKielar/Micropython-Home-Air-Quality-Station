@@ -5,3 +5,4 @@ webrepl.html
 venv/
 firmware/
 src/config.json
+thingspeak.txt

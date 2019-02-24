@@ -3,6 +3,7 @@ import ustruct as struct
 from configuration import Config
 
 
+# TODO create another function that will return only basic readings
 class PMS7003(Config):
     PMS_FRAME_LENGTH = 0
     PMS_PM1_0 = 1
