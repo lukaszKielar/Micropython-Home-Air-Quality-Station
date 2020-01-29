@@ -1,4 +1,5 @@
-.idea
+.idea/
+.vscode/
 .git
 weather_station.py
 webrepl.html
