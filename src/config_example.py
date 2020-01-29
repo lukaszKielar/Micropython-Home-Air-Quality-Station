@@ -1,0 +1,6 @@
+SSID = 'ssid'
+PASSWORD = 'password'
+OWM_URL = 'owm_url'
+OWM_API_KEY = 'own_api_key'
+THINKSPEAK_URL = 'thinkspeak_url'
+THINKSPEAK_API_KEY = 'thinkspeak_api_key'
