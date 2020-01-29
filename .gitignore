@@ -6,4 +6,5 @@ webrepl.html
 venv/
 firmware/
 src/config.json
+src/wifi_config.json
 thingspeak.txt
