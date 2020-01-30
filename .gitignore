@@ -9,3 +9,4 @@ src/config.json
 src/config.py
 src/wifi_config.json
 thingspeak.txt
+notebooks/
