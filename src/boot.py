@@ -4,8 +4,19 @@
 # import webrepl
 # webrepl.start()
 import gc
-from .wifi import Wifi
+import network
+import machine
+from config import SSID, PASSWORD
 
 
-Wifi().establish_connection()
+def establish_connection():
+    wifi = network.WLAN(network.STA_IF)
+    wifi.active(True)
+    wifi.connect(SSID, PASSWORD)
+    while not wifi.isconnected():
+        machine.idle()
+    print("Successfully connected to {}".format(SSID))
+
+
+establish_connection()
 gc.collect()
