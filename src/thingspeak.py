@@ -2,6 +2,7 @@ try:
     from urllib.urequest import urlopen
 except ImportError:
     from urllib.request import urlopen
+
 from config import THINGSPEAK_API_KEY, THINGSPEAK_BASE_URL, THINGSPEAK_FIELDS_URL
 
 
@@ -44,6 +45,7 @@ class Thingspeak:
         )
         full_url = self._thinkspeak_base_url + _url
 
+        # TODO try with context manager
         try:
             urlopen(full_url)
         except Exception as e:
