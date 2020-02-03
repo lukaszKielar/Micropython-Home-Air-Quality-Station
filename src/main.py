@@ -1,21 +1,26 @@
 import time
+import machine
+
 from weather_api import WeatherApi
 from thingspeak import Thingspeak
 
 
-while True:
-    thingspeak = Thingspeak()
-    weather_api = WeatherApi()
+if machine.reset_cause() == machine.DEEPSLEEP_RESET:
+    print("Woke up from deep sleep")
 
-    try:
-        weather_data = weather_api.get_weather_data()
-        thingspeak.update_channel(**weather_data)
-    except KeyboardInterrupt:
-        print('Exiting...')
-        break
-    # TODO use machine.reset()
-    except Exception as e:
-        print(e)
-        break
+thingspeak = Thingspeak()
+weather_api = WeatherApi()
 
-    time.sleep(30)
+try:
+    weather_data = weather_api.get_weather_data()
+    thingspeak.update_channel(**weather_data)
+    print("Channel has been updated")
+except KeyboardInterrupt:
+    print("Exiting...")
+except Exception as e:
+    print(e)
+    machine.reset()
+
+time.sleep(5)
+print("Putting device into deep sleep mode")
+machine.deepsleep(10000)
