@@ -1,11 +1,10 @@
 try:
     from urllib.urequest import urlopen
-except ImportError:
-    from urllib.request import urlopen
-try:
     import ujson
 except ImportError:
+    from urllib.request import urlopen
     import json as ujson
+
 from config import OWM_API_KEY, OWM_CITY_ID, OWM_URL
 
 
