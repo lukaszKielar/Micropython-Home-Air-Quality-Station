@@ -5,7 +5,7 @@ except ImportError:
     from urllib.request import urlopen
     import json as ujson
 
-from config import OWM_API_KEY, OWM_CITY_ID, OWM_URL
+from config import OWM_API_KEY, OWM_CITY_ID
 
 
 def format_url(url, **kwargs):
@@ -16,7 +16,11 @@ class WeatherApi:
 
     def __init__(self, city_id=OWM_CITY_ID):
         self._city_id = city_id
-        self._url = format_url(OWM_URL, city_id=city_id, own_api_key=OWM_API_KEY)
+        self._url = format_url(
+            url='http://api.openweathermap.org/data/2.5/weather?id={city_id}&units=metric&APPID={own_api_key}',
+            city_id=city_id,
+            own_api_key=OWM_API_KEY
+        )
 
     def __repr__(self):
         return 'WeatherApi(city_id={})'.format(self._city_id)
