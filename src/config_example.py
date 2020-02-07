@@ -1,8 +1,5 @@
 SSID = 'ssid'
 PASSWORD = 'password'
-OWM_CITY_ID = 'owm_city_id'
+OWM_CITY_ID = 3094802  # Cracow
 OWM_API_KEY = 'own_api_key'
-OWM_URL = 'owm_url'
 THINGSPEAK_API_KEY = 'thingspeak_api_key'
-THINGSPEAK_BASE_URL = 'thingspeak_base_url'
-THINGSPEAK_FIELDS_URL = 'thingspeak_fields_url'
