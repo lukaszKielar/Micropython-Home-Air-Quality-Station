@@ -3,7 +3,7 @@ try:
 except ImportError:
     from urllib.request import urlopen
 
-from config import THINGSPEAK_API_KEY, THINGSPEAK_BASE_URL, THINGSPEAK_FIELDS_URL
+from config import THINGSPEAK_API_KEY
 
 
 def format_url(url, **kwargs):
@@ -12,11 +12,13 @@ def format_url(url, **kwargs):
 
 class Thingspeak:
 
-    def __init__(self):
-        self._thinkspeak_base_url = format_url(
-            THINGSPEAK_BASE_URL,
-            thingspeak_api_key=THINGSPEAK_API_KEY
-        )
+    BASE_URL = format_url(
+        url='http://api.thingspeak.com/update?api_key={thingspeak_api_key}',
+        thingspeak_api_key=THINGSPEAK_API_KEY
+    )
+    # TODO create a function that automatically creates such path
+    #  create_fields_url
+    FIELDS_URL = '&field1={pm_1p0}&field2={pm_2p5}&field3={pm_10p0}&field4={temp}&field5={hum}&field6={out_temp}&field7={out_hum}&field8={out_pressure}'
 
     def __repr__(self):
         return 'Thingspeak()'
@@ -33,7 +35,7 @@ class Thingspeak:
             out_pressure=-999
     ):
         _url = format_url(
-            THINGSPEAK_FIELDS_URL,
+            url=Thingspeak.FIELDS_URL,
             pm_1p0=pm_1p0,
             pm_2p5=pm_2p5,
             pm_10p0=pm_10p0,
@@ -43,7 +45,7 @@ class Thingspeak:
             out_hum=out_hum,
             out_pressure=out_pressure
         )
-        full_url = self._thinkspeak_base_url + _url
+        full_url = Thingspeak.BASE_URL + _url
 
         # TODO try with context manager
         try:

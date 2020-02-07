@@ -14,10 +14,12 @@ def format_url(url, **kwargs):
 
 class WeatherApi:
 
+    BASE_URL = 'http://api.openweathermap.org/data/2.5/weather?id={city_id}&units=metric&APPID={own_api_key}'
+
     def __init__(self, city_id=OWM_CITY_ID):
         self._city_id = city_id
         self._url = format_url(
-            url='http://api.openweathermap.org/data/2.5/weather?id={city_id}&units=metric&APPID={own_api_key}',
+            url=WeatherApi.BASE_URL,
             city_id=city_id,
             own_api_key=OWM_API_KEY
         )
