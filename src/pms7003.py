@@ -41,6 +41,10 @@ class Pms7003:
             return False
         return True
 
+    @staticmethod
+    def _format_bytearray(buffer):
+        return "".join("0x{:02x} ".format(i) for i in buffer)
+
     def _send_cmd(self, request, response):
 
         nr_of_written_bytes = self.uart.write(request)
@@ -55,7 +59,7 @@ class Pms7003:
             if buffer != response:
                 raise UartError(
                     'Wrong UART response, expecting: {}, getting: {}'.format(
-                        response, buffer
+                        Pms7003._format_bytearray(response), Pms7003._format_bytearray(buffer)
                     )
                 )
 
