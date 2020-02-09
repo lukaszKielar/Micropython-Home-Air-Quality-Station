@@ -1,5 +1,5 @@
 import machine
-import ustruct
+import struct
 import time
 
 
@@ -7,14 +7,11 @@ class UartError(Exception):
     pass
 
 
-# TODO add debug mode
 class Pms7003:
-    """
-    More about passive mode here:
-    https://github.com/teusH/MySense/blob/master/docs/pms7003.md
-    https://patchwork.ozlabs.org/cover/1039261/
-    https://joshefin.xyz/air-quality-with-raspberrypi-pms7003-and-java/
-    """
+
+    START_BYTE_1 = 0x42
+    START_BYTE_2 = 0x4d
+
     PMS_FRAME_LENGTH = 0
     PMS_PM1_0 = 1
     PMS_PM2_5 = 2
@@ -32,34 +29,25 @@ class Pms7003:
     PMS_ERROR = 14
     PMS_CHECKSUM = 15
 
-    START_BYTE_1 = 0x42
-    START_BYTE_2 = 0x4d
-    ENTER_PASSIVE_MODE_REQUEST = bytearray([0x42, 0x4d, 0xe1, 0x00, 0x00, 0x01, 0x70])
-    ENTER_PASSIVE_MODE_RESPONSE = bytearray([0x42, 0x4d, 0x00, 0x04, 0xe1, 0x00, 0x01, 0x74])
-    SLEEP_REQUEST = bytearray([0x42, 0x4d, 0xe4, 0x00, 0x00, 0x01, 0x73])
-    SLEEP_RESPONSE = bytearray([0x42, 0x4d, 0x00, 0x04, 0xe4, 0x00, 0x01, 0x77])
-    WAKEUP_REQUEST = bytearray([0x42, 0x4d, 0xe4, 0x00, 0x01, 0x01, 0x74])  # NO response
-    READ_IN_PASSIVE_REQUEST = bytearray([0x42, 0x4d, 0xe2, 0x00, 0x00, 0x01, 0x71])  # data as response
-
-    def __init__(self, uart=2):
+    def __init__(self, uart):
         self.uart = machine.UART(uart, baudrate=9600, bits=8, parity=None, stop=1)
-        self._send_cmd(self.ENTER_PASSIVE_MODE_REQUEST, self.ENTER_PASSIVE_MODE_RESPONSE)
 
     def __repr__(self):
         return "Pms7003({})".format(self.uart)
 
-    def _assert_byte(self, byte, expected):
+    @staticmethod
+    def _assert_byte(byte, expected):
         if byte is None or len(byte) < 1 or ord(byte) != expected:
             return False
         return True
 
     def _send_cmd(self, request, response):
-        
+
         nr_of_written_bytes = self.uart.write(request)
 
         if nr_of_written_bytes != len(request):
             raise UartError('Failed to write to UART')
-        
+
         if response:
             time.sleep(2)
             buffer = self.uart.read(len(response))
@@ -71,41 +59,31 @@ class Pms7003:
                     )
                 )
 
-            # print('Response:', ''.join('0x{:02x} '.format(x) for x in buffer))
-
-    def sleep(self):
-        self._send_cmd(self.SLEEP_REQUEST, self.SLEEP_RESPONSE)
-
-    def wakeup(self):
-        self._send_cmd(self.WAKEUP_REQUEST, None)
-
     def read(self):
-        self._send_cmd(self.READ_IN_PASSIVE_REQUEST, None)
-        
+
         while True:
+
             first_byte = self.uart.read(1)
             if not self._assert_byte(first_byte, self.START_BYTE_1):
-                # print('Bad first byte')
                 continue
+
             second_byte = self.uart.read(1)
             if not self._assert_byte(second_byte, self.START_BYTE_2):
-                # print('Bad second byte')
                 continue
-        
+
             # we are reading 30 bytes left
             read_bytes = self.uart.read(30)
             if len(read_bytes) < 30:
                 continue
 
-            data = ustruct.unpack('!HHHHHHHHHHHHHBBH', read_bytes)
+            data = struct.unpack('!HHHHHHHHHHHHHBBH', read_bytes)
 
             checksum = self.START_BYTE_1 + self.START_BYTE_2
             checksum += sum(read_bytes[:28])
 
             if checksum != data[self.PMS_CHECKSUM]:
-                # print('Bad checksum')
                 continue
-                
+
             return {
                 'FRAME_LENGTH': data[self.PMS_FRAME_LENGTH],
                 'PM1_0': data[self.PMS_PM1_0],
@@ -124,3 +102,49 @@ class Pms7003:
                 'ERROR': data[self.PMS_ERROR],
                 'CHECKSUM': data[self.PMS_CHECKSUM],
             }
+
+
+class PassivePms7003(Pms7003):
+    """
+    More about passive mode here:
+    https://github.com/teusH/MySense/blob/master/docs/pms7003.md
+    https://patchwork.ozlabs.org/cover/1039261/
+    https://joshefin.xyz/air-quality-with-raspberrypi-pms7003-and-java/
+    """
+    ENTER_PASSIVE_MODE_REQUEST = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0xe1, 0x00, 0x00, 0x01, 0x70]
+    )
+    ENTER_PASSIVE_MODE_RESPONSE = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0x00, 0x04, 0xe1, 0x00, 0x01, 0x74]
+    )
+    SLEEP_REQUEST = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0xe4, 0x00, 0x00, 0x01, 0x73]
+    )
+    SLEEP_RESPONSE = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0x00, 0x04, 0xe4, 0x00, 0x01, 0x77]
+    )
+    # NO response
+    WAKEUP_REQUEST = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0xe4, 0x00, 0x01, 0x01, 0x74]
+    )
+    # data as response
+    READ_IN_PASSIVE_REQUEST = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0xe2, 0x00, 0x00, 0x01, 0x71]
+    )
+
+    def __init__(self, uart):
+        super().__init__(uart=uart)
+        # use passive mode pms7003
+        self._send_cmd(request=PassivePms7003.ENTER_PASSIVE_MODE_REQUEST,
+                       response=PassivePms7003.ENTER_PASSIVE_MODE_RESPONSE)
+
+    def sleep(self):
+        self._send_cmd(request=PassivePms7003.SLEEP_REQUEST,
+                       response=PassivePms7003.SLEEP_RESPONSE)
+
+    def wakeup(self):
+        self._send_cmd(request=PassivePms7003.WAKEUP_REQUEST, response=None)
+
+    def read(self):
+        self._send_cmd(request=PassivePms7003.READ_IN_PASSIVE_REQUEST, response=None)
+        return super().read()
