@@ -1,10 +1,17 @@
 import machine
-import ustruct as struct
-from configuration import Config
+import struct
+import time
 
 
-# TODO create another function that will return only basic readings
-class PMS7003(Config):
+class UartError(Exception):
+    pass
+
+
+class Pms7003:
+
+    START_BYTE_1 = 0x42
+    START_BYTE_2 = 0x4d
+
     PMS_FRAME_LENGTH = 0
     PMS_PM1_0 = 1
     PMS_PM2_5 = 2
@@ -22,35 +29,63 @@ class PMS7003(Config):
     PMS_ERROR = 14
     PMS_CHECKSUM = 15
 
-    def get_uart(self):
-        uart = machine.UART(self.uart, 9600)
-        uart.init(9600, bits=8, parity=None, stop=1, timeout=5000)
-        return uart
+    def __init__(self, uart):
+        self.uart = machine.UART(uart, baudrate=9600, bits=8, parity=None, stop=1)
 
-    def _assert_byte(self, byte, expected):
+    def __repr__(self):
+        return "Pms7003({})".format(self.uart)
+
+    @staticmethod
+    def _assert_byte(byte, expected):
         if byte is None or len(byte) < 1 or ord(byte) != expected:
             return False
         return True
 
+    @staticmethod
+    def _format_bytearray(buffer):
+        return "".join("0x{:02x} ".format(i) for i in buffer)
+
+    def _send_cmd(self, request, response):
+
+        nr_of_written_bytes = self.uart.write(request)
+
+        if nr_of_written_bytes != len(request):
+            raise UartError('Failed to write to UART')
+
+        if response:
+            time.sleep(2)
+            buffer = self.uart.read(len(response))
+
+            if buffer != response:
+                raise UartError(
+                    'Wrong UART response, expecting: {}, getting: {}'.format(
+                        Pms7003._format_bytearray(response), Pms7003._format_bytearray(buffer)
+                    )
+                )
+
     def read(self):
-        uart = self.get_uart()
+
         while True:
-            if not self._assert_byte(uart.read(1), 0x42):
-                continue
-            if not self._assert_byte(uart.read(1), 0x4D):
-                continue
 
-            read_buffer = uart.read(30)
-            if len(read_buffer) < 30:
+            first_byte = self.uart.read(1)
+            if not self._assert_byte(first_byte, self.START_BYTE_1):
                 continue
 
-            data = struct.unpack('!HHHHHHHHHHHHHBBH', read_buffer)
+            second_byte = self.uart.read(1)
+            if not self._assert_byte(second_byte, self.START_BYTE_2):
+                continue
 
-            checksum = 0x42 + 0x4D
-            for c in read_buffer[0:28]:
-                checksum += c
+            # we are reading 30 bytes left
+            read_bytes = self.uart.read(30)
+            if len(read_bytes) < 30:
+                continue
+
+            data = struct.unpack('!HHHHHHHHHHHHHBBH', read_bytes)
+
+            checksum = self.START_BYTE_1 + self.START_BYTE_2
+            checksum += sum(read_bytes[:28])
+
             if checksum != data[self.PMS_CHECKSUM]:
-                print('bad checksum')
                 continue
 
             return {
@@ -72,8 +107,48 @@ class PMS7003(Config):
                 'CHECKSUM': data[self.PMS_CHECKSUM],
             }
 
-    def __repr__(self):
-        return "Device: {}\nUart: {}\nSensor: PMS7003".format(self.device, self.uart)
 
-    def __str__(self):
-        return self.__repr__()
+class PassivePms7003(Pms7003):
+    """
+    More about passive mode here:
+    https://github.com/teusH/MySense/blob/master/docs/pms7003.md
+    https://patchwork.ozlabs.org/cover/1039261/
+    https://joshefin.xyz/air-quality-with-raspberrypi-pms7003-and-java/
+    """
+    ENTER_PASSIVE_MODE_REQUEST = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0xe1, 0x00, 0x00, 0x01, 0x70]
+    )
+    ENTER_PASSIVE_MODE_RESPONSE = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0x00, 0x04, 0xe1, 0x00, 0x01, 0x74]
+    )
+    SLEEP_REQUEST = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0xe4, 0x00, 0x00, 0x01, 0x73]
+    )
+    SLEEP_RESPONSE = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0x00, 0x04, 0xe4, 0x00, 0x01, 0x77]
+    )
+    # NO response
+    WAKEUP_REQUEST = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0xe4, 0x00, 0x01, 0x01, 0x74]
+    )
+    # data as response
+    READ_IN_PASSIVE_REQUEST = bytearray(
+        [Pms7003.START_BYTE_1, Pms7003.START_BYTE_2, 0xe2, 0x00, 0x00, 0x01, 0x71]
+    )
+
+    def __init__(self, uart):
+        super().__init__(uart=uart)
+        # use passive mode pms7003
+        self._send_cmd(request=PassivePms7003.ENTER_PASSIVE_MODE_REQUEST,
+                       response=PassivePms7003.ENTER_PASSIVE_MODE_RESPONSE)
+
+    def sleep(self):
+        self._send_cmd(request=PassivePms7003.SLEEP_REQUEST,
+                       response=PassivePms7003.SLEEP_RESPONSE)
+
+    def wakeup(self):
+        self._send_cmd(request=PassivePms7003.WAKEUP_REQUEST, response=None)
+
+    def read(self):
+        self._send_cmd(request=PassivePms7003.READ_IN_PASSIVE_REQUEST, response=None)
+        return super().read()

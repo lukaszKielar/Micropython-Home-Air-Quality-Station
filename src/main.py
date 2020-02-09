@@ -1,63 +1,72 @@
 import time
 import machine
-from dht import DHT11
-from pms7003 import PMS7003
-from configuration import WIFI, Thingspeak, Weather
+from dht import DHT22
 
-wifi = WIFI()
-weather = Weather()
-thinkspeak = Thingspeak()
-dht = DHT11(machine.Pin(4))
-pms = PMS7003()
-
-reset_value = 0
+from pms7003 import PassivePms7003, UartError
+from thingspeak import Thingspeak
+from weather_api import WeatherApi
 
 
-def read_pm():
-    """
-
-    :return:
-    """
-    pm_data = pms.read()
-    pm_1p0 = pm_data["PM1_0"]
-    pm_2p5 = pm_data["PM2_5"]
-    pm_10p0 = pm_data["PM10_0"]
-    print("PM 1.0: ", pm_1p0, " ug/m3")
-    print("PM 2.5: ", pm_2p5, " ug/m3")
-    print("PM 10.0: ", pm_10p0, " ug/m3")
-    return pm_1p0, pm_2p5, pm_10p0
+if machine.reset_cause() == machine.DEEPSLEEP_RESET:
+    print("Woke up ESP32 from deep sleep")
 
 
-# TODO use deep sleep
-while True:
-    if reset_value == 12:
-        machine.reset()
+dht22 = DHT22(machine.Pin(4))
+pms7003 = PassivePms7003(uart=2)
+thingspeak = Thingspeak()
+weather_api = WeatherApi()
+
+# create data dict for data
+data = {}
+
+try:
+    # wake up pms7003
+    print("Waking up pms7003 from sleep mode")
+    pms7003.wakeup()
+
+    # wait 60 seconds to stabilize airflow
+    print("Sleep 60 seconds to stabilize airflow")
+    time.sleep(60)
+
+    # get openweathermap data
+    print("Getting OWM data")
+    data.update(weather_api.get_weather_data())
+
+    # get dht22 readings
+    print("Getting dht22 data")
+    dht22.measure()
+    data.update({
+        'temp': dht22.temperature(),
+        'hum': dht22.humidity()
+    })
+
+    # get pms7003 readings
+    print("Getting pms7003 data")
+    pms7003_data = pms7003.read()
+    data.update({
+        'pm_1p0': pms7003_data.get('PM1_0', -999),
+        'pm_2p5': pms7003_data.get('PM2_5', -999),
+        'pm_10p0': pms7003_data.get('PM10_0', -999),
+    })
+
+    # put pms7003 into sleep mode
+    print("Putting pms7003 into sleep mode")
+    # sleep method usually fails when it's executed after `wakeup()` method
+    # in order to avoid issues we have to use try-except block
     try:
-        dht.measure()
-        temp = dht.temperature()
-        print("Temperature: ", temp, "*C")
-        hum = dht.humidity()
-        print("Humidity: ", hum, "%")
-        pm_1p0, pm_2p5, pm_10p0 = read_pm()
-        out_temp = weather._get_weather()['out_temp']
-        out_hum = weather._get_weather()['out_hum']
-        out_pressure = weather._get_weather()['out_pressure']
-        try:
-            thinkspeak._send(pm_1p0=pm_1p0,
-                             pm_2p5=pm_2p5,
-                             pm_10p0=pm_10p0,
-                             temp=temp,
-                             hum=hum,
-                             out_temp=out_temp,
-                             out_hum=out_hum,
-                             out_pressure=out_pressure)
-        except Exception as e:
-            print(e)
-    except KeyboardInterrupt:
-        print("Exiting...")
-        break
-    except Exception as e:
-        print(e)
-        machine.reset()
-    reset_value += 1
-    time.sleep(600)
+        pms7003.sleep()
+    except UartError:
+        print("Pms7003 sleep response failed, but device has been put into sleep mode")
+
+    # put data to thingspeak channel
+    print("Putting data to Thingspeak channel")
+    thingspeak.update_channel(**data)
+    print("Channel has been updated")
+except KeyboardInterrupt:
+    print("Exiting...")
+except Exception as e:
+    print(e)
+    machine.reset()
+
+print("Putting ESP32 into deep sleep mode for 10 minutes")
+machine.deepsleep(600_000)
