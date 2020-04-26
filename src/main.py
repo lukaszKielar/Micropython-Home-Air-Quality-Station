@@ -62,11 +62,11 @@ try:
     print("Putting data to Thingspeak channel")
     thingspeak.update_channel(**data)
     print("Channel has been updated")
+
+    print("Putting ESP32 into deep sleep mode for 10 minutes")
+    machine.deepsleep(600_000)
 except KeyboardInterrupt:
     print("Exiting...")
 except Exception as e:
     print(e)
     machine.reset()
-
-print("Putting ESP32 into deep sleep mode for 10 minutes")
-machine.deepsleep(600_000)
