@@ -2,9 +2,9 @@
 
 set -e
 
-for file in "$@"
+for file in ./src/*
 do
-  ampy --port /dev/ttyUSB0 put src/$file
+  ampy --port /dev/ttyUSB0 put $file
   echo "$file has been put to the board"
 done
 
