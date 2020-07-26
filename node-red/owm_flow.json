@@ -1,0 +1,109 @@
+[
+  {
+    "id": "f7c352ce.bdd538",
+    "type": "tab",
+    "label": "Flow 1",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "e13138f5.7c4a68",
+    "type": "inject",
+    "z": "f7c352ce.bdd538",
+    "name": "",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "x": 100,
+    "y": 40,
+    "wires": [["347e582c.50d1b"]]
+  },
+  {
+    "id": "614c87d0.b67e98",
+    "type": "secret",
+    "z": "f7c352ce.bdd538",
+    "name": "OWM_API_KEY",
+    "x": 540,
+    "y": 40,
+    "wires": [["74d0ef5e.d07a6"]]
+  },
+  {
+    "id": "74d0ef5e.d07a6",
+    "type": "http request",
+    "z": "f7c352ce.bdd538",
+    "name": "",
+    "method": "GET",
+    "ret": "obj",
+    "paytoqs": false,
+    "url": "http://api.openweathermap.org/data/2.5/weather?id={{OWM_CITY_ID}}&units=metric&APPID={{secret}}",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "authType": "",
+    "x": 730,
+    "y": 40,
+    "wires": [["509d7ec3.305ac"]]
+  },
+  {
+    "id": "509d7ec3.305ac",
+    "type": "python-function",
+    "z": "f7c352ce.bdd538",
+    "name": "get_omw_data",
+    "func": "output_msg = {'payload': {}}\n\n\ndef get_wind_data(msg):\n    wind_data = msg['payload']['wind']\n    for k, v in wind_data.items():\n        output_msg['payload']['wind_' + k] = v\n    \n        \ndef get_main_data(msg):\n    main_data = msg['payload']['main']\n    for k, v in main_data.items():\n        output_msg['payload'][k] = v\n\n\n# both mutate `output_msg` dictionary\nget_wind_data(msg)\nget_main_data(msg)\n\n\nreturn output_msg\n",
+    "outputs": 1,
+    "x": 920,
+    "y": 40,
+    "wires": [["811741fe.721bd8"]]
+  },
+  {
+    "id": "811741fe.721bd8",
+    "type": "debug",
+    "z": "f7c352ce.bdd538",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 930,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "a4b4e97e.60c45",
+    "type": "secret",
+    "z": "f7c352ce.bdd538",
+    "name": "THINGSPEAK_API_KEY",
+    "x": 130,
+    "y": 180,
+    "wires": [[]]
+  },
+  {
+    "id": "347e582c.50d1b",
+    "type": "change",
+    "z": "f7c352ce.bdd538",
+    "name": "",
+    "rules": [
+      {
+        "t": "set",
+        "p": "OWM_CITY_ID",
+        "pt": "msg",
+        "to": "3094802",
+        "tot": "num"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 310,
+    "y": 40,
+    "wires": [["614c87d0.b67e98"]]
+  }
+]
